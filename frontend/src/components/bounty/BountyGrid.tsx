@@ -5,27 +5,8 @@ import { ChevronDown, Loader2, Plus, Search, X } from 'lucide-react';
 import { BountyCard } from './BountyCard';
 import { useInfiniteBounties } from '../../hooks/useBounties';
 import { staggerContainer, staggerItem } from '../../lib/animations';
-import type { Bounty } from '../../types/bounty';
 
 const FILTER_SKILLS = ['All', 'TypeScript', 'Rust', 'Solidity', 'Python', 'Go', 'JavaScript'];
-
-function bountyMatchesQuery(bounty: Bounty, query: string) {
-  if (!query) return true;
-
-  const haystack = [
-    bounty.title,
-    bounty.description,
-    bounty.category,
-    bounty.org_name,
-    bounty.repo_name,
-    ...(bounty.skills ?? []),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  return haystack.includes(query);
-}
 
 export function BountyGrid() {
   const [activeSkill, setActiveSkill] = useState<string>('All');
@@ -41,19 +22,19 @@ export function BountyGrid() {
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
 
-  const params = {
-    status: statusFilter,
-    skill: activeSkill !== 'All' ? activeSkill : undefined,
-  };
+  const params = useMemo(
+    () => ({
+      status: statusFilter,
+      skill: activeSkill !== 'All' ? activeSkill : undefined,
+      q: debouncedSearch || undefined,
+    }),
+    [activeSkill, debouncedSearch, statusFilter]
+  );
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
     useInfiniteBounties(params);
 
-  const allBounties = data?.pages.flatMap((p) => p.items) ?? [];
-  const filteredBounties = useMemo(
-    () => allBounties.filter((bounty) => bountyMatchesQuery(bounty, debouncedSearch)),
-    [allBounties, debouncedSearch]
-  );
+  const bounties = data?.pages.flatMap((p) => p.items) ?? [];
   const hasSearch = debouncedSearch.length > 0;
 
   return (
@@ -157,7 +138,7 @@ export function BountyGrid() {
         )}
 
         {/* Empty state */}
-        {!isLoading && !isError && filteredBounties.length === 0 && (
+        {!isLoading && !isError && bounties.length === 0 && (
           <div className="text-center py-16">
             <p className="text-text-muted text-lg mb-2">No bounties found</p>
             <p className="text-text-muted text-sm">
@@ -171,7 +152,7 @@ export function BountyGrid() {
         )}
 
         {/* Bounty grid */}
-        {!isLoading && filteredBounties.length > 0 && (
+        {!isLoading && bounties.length > 0 && (
           <motion.div
             variants={staggerContainer}
             initial="initial"
@@ -179,7 +160,7 @@ export function BountyGrid() {
             viewport={{ once: true, margin: '-50px' }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
           >
-            {filteredBounties.map((bounty) => (
+            {bounties.map((bounty) => (
               <motion.div key={bounty.id} variants={staggerItem}>
                 <BountyCard bounty={bounty} />
               </motion.div>
