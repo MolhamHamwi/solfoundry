@@ -30,6 +30,18 @@ describe('BountyCountdown', () => {
     expect(parts?.urgency).toBe('urgent');
   });
 
+  it('shows one minute for active deadlines under one minute', () => {
+    render(<BountyCountdown deadline="2026-06-13T12:00:30.000Z" />);
+
+    expect(screen.getByLabelText('Bounty deadline countdown: 1m')).toBeInTheDocument();
+  });
+
+  it('shows one minute at the exact 60 second boundary', () => {
+    render(<BountyCountdown deadline="2026-06-13T12:01:00.000Z" />);
+
+    expect(screen.getByLabelText('Bounty deadline countdown: 1m')).toBeInTheDocument();
+  });
+
   it('shows expired after the deadline passes', () => {
     render(<BountyCountdown deadline="2026-06-13T11:59:00.000Z" />);
 

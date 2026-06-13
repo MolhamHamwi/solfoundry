@@ -29,7 +29,7 @@ export function getCountdownParts(deadline?: string | null, now = Date.now()): C
     return { days: 0, hours: 0, minutes: 0, totalMs, urgency: 'expired' };
   }
 
-  const totalMinutes = Math.max(0, Math.floor(totalMs / 60_000));
+  const totalMinutes = Math.max(1, Math.floor(totalMs / 60_000));
   const days = Math.floor(totalMinutes / 1_440);
   const hours = Math.floor((totalMinutes % 1_440) / 60);
   const minutes = totalMinutes % 60;
@@ -72,7 +72,17 @@ export function BountyCountdown({
   useEffect(() => {
     if (!deadline) return undefined;
 
-    const interval = window.setInterval(() => setNow(Date.now()), 1_000);
+    const deadlineMs = new Date(deadline).getTime();
+    if (Number.isNaN(deadlineMs)) return undefined;
+
+    const interval = window.setInterval(() => {
+      const nextNow = Date.now();
+      setNow(nextNow);
+      if (nextNow >= deadlineMs) {
+        window.clearInterval(interval);
+      }
+    }, 1_000);
+
     return () => window.clearInterval(interval);
   }, [deadline]);
 
